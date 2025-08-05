@@ -41,7 +41,7 @@ else:
         persist_directory=chroma_db_path
     )
 
-# RAG 체인 생성 (근거 JSON 스니펫 포함)
+# RAG 체인 생성 (근거 JSON 포함)
 llm = AzureChatOpenAI(
     deployment_name="dev-gpt-4.1-mini",
     temperature=0,
@@ -49,7 +49,7 @@ llm = AzureChatOpenAI(
     openai_api_version="2024-12-01-preview",
 )
 
-# 프롬프트 템플릿: 답변에 반드시 관련 OpenAPI JSON snippet(엔드포인트, 설명 등)을 포함하도록 지시
+# 프롬프트 템플릿: 답변에 반드시 관련 OpenAPI JSON 엔드포인트, 설명 등을 포함하도록 지시
 custom_prompt = PromptTemplate(
     input_variables=["context", "question"],
     template="""
@@ -58,8 +58,8 @@ custom_prompt = PromptTemplate(
         {context}
         ---
         위 정보를 참고하여, 관련 path, method, 설명 등 구조적 정보를 근거와 함께 명확히 답변하세요.
-        반드시 답변과 함께 관련 표를 api 파라미터를 정리하여 snippet(엔드포인트, 설명 등)을 별도 코드블록으로 출력하세요.
-        필요하다면, 관련 JSON을 분석한 결과를 사용자가 요청할 수 있는 Java와 Python 샘플 코드, cURL 호출 전문을 가장 짧게 출력하세요.
+        반드시 답변과 함께 관련 테이블로 api 파라미터를 정리하여 엔드포인트, 설명을 출력하세요.
+        필요하다면, 관련 JSON을 분석한 결과를 사용자가 요청할 수 있는 Java와 Python 샘플 코드, cURL 호출 전문을 짧게 출력하세요.
         모든 호출 도메인은 https://api.stripe.com/ 입니다.
 
         답변 예시: 
