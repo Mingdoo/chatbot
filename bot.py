@@ -7,39 +7,55 @@ from langchain.prompts import PromptTemplate
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain_core.documents import Document
 from dotenv import load_dotenv
-import os
-import json
+import time, os, json
 load_dotenv()
 
 # Streamlit 페이지 설정
 st.set_page_config(page_title="OpenAPI Chat Agent", layout="wide")
 st.title("OpenAPI 문서 기반 챗봇")
 
-# OpenAPI JSON을 path/method별로 분할
+# 1. JSON 파일 로드
 with open("apis/stripe-openapi.json", encoding="utf-8") as f:
     openapi = json.load(f)
-    
+
+# 2. OpenAPI 문서에서 path와 method를 추출하여 Document 객체 생성
 texts = []
 for path, methods in openapi.get("paths", {}).items():
     for method, spec in methods.items():
-        doc = {
-            "path": path,
-            "method": method,
-            "spec": spec
-        }
-        texts.append(Document(page_content=json.dumps(doc, ensure_ascii=False, indent=2)))
+        doc_dict = {"path": path, "method": method, "spec": spec}
+        content = json.dumps(doc_dict, ensure_ascii=False, indent=2)
+        texts.append(Document(page_content=content))
 
-# 벡터 스토어 생성 (chroma_db가 있으면 로드, 없으면 새로 생성)
+# 3. Chroma DB 경로 설정 및 Azure OpenAI 임베딩 초기화
 chroma_db_path = "chroma_db"
+embeddings = AzureOpenAIEmbeddings(
+    deployment="dev-text-embedding-3-large",
+    chunk_size=1000,
+    openai_api_version="2024-02-01"
+)
+
+# 4. Chroma DB 로드 또는 생성
 if os.path.exists(chroma_db_path) and os.listdir(chroma_db_path):
-    vectorstore = Chroma(persist_directory=chroma_db_path, embedding_function=AzureOpenAIEmbeddings(deployment="dev-text-embedding-3-large", chunk_size=1000, openai_api_version="2024-02-01"))
-else:
-    embeddings = AzureOpenAIEmbeddings(deployment="dev-text-embedding-3-large", chunk_size=2048, openai_api_version="2024-02-01")
-    vectorstore = Chroma.from_documents(
-        texts,
-        embeddings,
+    # 기존 Chroma DB가 존재하면 로드
+    vectorstore = Chroma(
+        embedding_function=embeddings,
         persist_directory=chroma_db_path
     )
+else:
+    print("Chroma DB가 존재하지 않거나 비어 있습니다. 새로 생성합니다.")
+    # 새로운 Chroma DB 생성
+    vectorstore = Chroma(
+        embedding_function=embeddings,
+        persist_directory=chroma_db_path
+    )
+    # 텍스트를 Chroma DB에 추가
+    for idx, doc in enumerate(texts, start=1):
+        vectorstore.add_documents([doc])
+        print(f"{idx}/{len(texts)} 문서가 Chroma DB에 추가되었습니다.")
+        time.sleep(1)
+    # Chroma DB를 디스크에 저장
+    vectorstore.persist()
+    print("Chroma DB가 성공적으로 생성되었습니다.")
 
 # RAG 체인 생성 (근거 JSON 포함)
 llm = AzureChatOpenAI(
