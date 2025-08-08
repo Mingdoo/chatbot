@@ -1,12 +1,12 @@
 name: Build Streamlit Docker Image
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Docker Image Tag'
+        required: true
+        default: 'latest'
 
 jobs:
   build:
