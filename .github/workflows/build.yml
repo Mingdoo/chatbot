@@ -31,4 +31,4 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ secrets.ACR_URL }}/streamlit-app:latest
+          tags: ${{ secrets.ACR_URL }}/streamlit-app:${{ github.event.inputs.image_tag }}
