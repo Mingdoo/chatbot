@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# 사용법: ./deploy.sh v1.0.0
+# 사용법: ./run.sh 1.0.0
 tag=$1
 
 if [ -z "$tag" ]; then
-  echo "❌ 이미지 태그를 입력해야 합니다. 예: ./deploy.sh v1.0.0"
+  echo "❌ 이미지 태그를 입력해야 합니다. 예: ./deploy.sh 1.0.0"
   exit 1
 fi
 
